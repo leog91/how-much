@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "start": "bun run scrape.ts",
-    "db-push": "drizzle-kit push"
+    "db-push": "bunx drizzle-kit generate && bunx drizzle-kit migrate",
+    "front": "bun run --watch front/server.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
