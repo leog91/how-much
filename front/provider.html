@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Add Provider</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        padding: 2rem;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-width: 360px;
+      }
+      label {
+        font-weight: 600;
+      }
+      input,
+      button,
+      textarea {
+        padding: 0.5rem;
+        font-size: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Add Provider</h1>
+
+    <form id="providerForm">
+      <label for="provider_name">Name</label>
+      <input id="provider_name" name="provider_name" type="text" required />
+
+      <label for="priceSelector">PriceSelector</label>
+      <input id="priceSelector" name="priceSelector" type="text" required />
+
+      <label for="titleSelector">TitleSelector</label>
+      <input id="titleSelector" name="titleSelector" type="text" />
+
+      <label for="imageSelector">ImageSelector</label>
+      <input id="imageSelector" name="imageSelector" type="text" />
+
+      <label for="notes">notes</label>
+      <input id="notes" name="notes" type="text" />
+
+      <button type="submit">Send</button>
+    </form>
+
+    <p id="status" aria-live="polite"></p>
+
+    <script>
+      const form = document.getElementById("providerForm");
+      const status = document.getElementById("status");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+
+        status.textContent = "Sending...";
+
+        try {
+          const res = await fetch("/submit_provider", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (!res.ok) throw new Error(await res.text());
+          const json = await res.json();
+          status.textContent = json.message || "Submitted!";
+        } catch (err) {
+          status.textContent = "Error: " + err.message;
+        }
+      });
+    </script>
+  </body>
+</html>
