@@ -27,6 +27,7 @@ export const providerSelectors = sqliteTable("provider_selectors", {
     id: text("id").primaryKey(),
     provider: text("provider").notNull().unique(),
     priceSelector: text("price_selector").notNull(),
+    priceSelectorNotInSale: text("price_selector_not_in_sale").notNull().default(''),
     titleSelector: text("title_selector").notNull(),
     imageSelector: text("image_selector"),
     availabilitySelector: text("availability_selector"),

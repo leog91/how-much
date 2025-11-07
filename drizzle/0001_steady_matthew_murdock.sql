@@ -1,0 +1,1 @@
+ALTER TABLE `provider_selectors` ADD `price_selector_not_in_sale` text DEFAULT '' NOT NULL;
