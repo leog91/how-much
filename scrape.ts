@@ -4,7 +4,7 @@ import { db } from './src/db.ts';
 import { products, productsToScrape, providerSelectors } from './src/schema.ts';
 
 
-import { chromium, type Locator } from 'playwright';
+import { chromium, type Locator, type Page } from 'playwright';
 import chalk from 'chalk';
 
 
@@ -42,20 +42,17 @@ type ProductToScrapeFull = {
 
 
 export async function main() {
-
-
-    const products = await getProductsFromDb()
+    const products = await getProductsFromDb();
+    const browser = await chromium.launch({ headless: false });
+    const page = await browser.newPage();
 
     let scrappedSummary = [];
 
-
     for (const product of products) {
-
-
-        const scrapedProductPrice = await scrapeProduct(product);
+        const scrapedProductPrice = await scrapeProduct(product, page);
         console.log(chalk.magenta(`Scraped price for ${product.products_to_scrape.name}: ${scrapedProductPrice}`));
 
-        saveToDB({
+        await saveToDB({
             title: product.products_to_scrape.name,
             price: scrapedProductPrice,
             url: product.products_to_scrape.url,
@@ -65,20 +62,20 @@ export async function main() {
             name: product.products_to_scrape.name,
             price: scrapedProductPrice,
         });
-
-
     }
 
-
-    console.log('Scraping completed.');
+    await browser.close();
+    console.log(chalk.greenBright('Scraping completed.'));
     return scrappedSummary;
-
-
 }
+
 
 
 export async function testLastAdded() {
 
+
+    const browser = await chromium.launch({ headless: false });
+    const page = await browser.newPage();
 
     const result = await db.select()
         .from(productsToScrape)
@@ -88,10 +85,11 @@ export async function testLastAdded() {
         .where(eq(productsToScrape.active, true))
 
 
-    const scrapedProductPrice = await scrapeProduct(result[0]!);
+    const scrapedProductPrice = await scrapeProduct(result[0]!, page);
 
     console.log(chalk.magenta(`Scraped price for ${result[0]!.products_to_scrape.name}: ${scrapedProductPrice}`));
 
+    await browser.close();
 
 }
 
@@ -127,64 +125,41 @@ async function saveToDB(scrapedProduct: Product) {
 
 
 
-//checkType
-async function scrapeProduct(productToScrapeFull: ProductToScrapeFull): Promise<string> {
-    const url = productToScrapeFull.products_to_scrape.url
-
-    console.log(`Launching browser and navigating to ${url}...`);
-
-    //to-do >> check first headless  false 
-    const browser = await chromium.launch({ headless: false });
-
-
-    const page = await browser.newPage();
-
-
-    await page.goto(url, {
-        // waitUntil: 'networkidle', // waits until no network requests for 500 ms
-        waitUntil: 'domcontentloaded', // waits until no network requests for 500 ms
-
-        timeout: 60000,           // 1 minute
-    });
-
-
-    let priceElement = null;
-
-    let content = null;
+async function scrapeProduct(productToScrapeFull: ProductToScrapeFull, page: Page): Promise<string> {
+    const url = productToScrapeFull.products_to_scrape.url;
+    console.log(`Navigating to ${url}...`);
 
     try {
-        const priceSector = productToScrapeFull.provider_selectors?.priceSelector;
-        priceElement = await page.waitForSelector(`xpath=${priceSector}`, { timeout: 10000 });
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-        const locator = page.locator(`xpath=${priceSector}`).first();
-        content = await locator.textContent();
-        console.log(content);
-        console.log("info", 'Price element found using primary selector.', productToScrapeFull.products_to_scrape.name);
+        const selectors = [
+            productToScrapeFull.provider_selectors?.priceSelector,
+            productToScrapeFull.provider_selectors?.priceSelectorNotInSale,
+        ];
 
-    }
-    catch (error) {
+        let content: string | null = null;
 
-        console.error("info", `Primary selector failed, trying fallback selector...`);
-
-        const NotInSaleSelector = productToScrapeFull.provider_selectors?.priceSelectorNotInSale;
-
-        try {
-            priceElement = await page.waitForSelector(`xpath=${NotInSaleSelector}`, { timeout: 10000 });
-
-
-
-            const locator = page.locator(`xpath=${NotInSaleSelector}`).first();
-            content = await locator.textContent();
-            console.log(content);
-
-        } catch (error) {
-            console.error("FAIL>>", `Both primary and fallback selectors failed.`, productToScrapeFull.products_to_scrape.name);
+        for (const selector of selectors) {
+            if (!selector) continue;
+            try {
+                const locator = page.locator(`xpath=${selector}`).first();
+                await locator.waitFor({ timeout: 10000 });
+                content = await locator.textContent();
+                console.log(chalk.green(`Found price for ${productToScrapeFull.products_to_scrape.name}: ${content}`));
+                break;
+            } catch {
+                console.warn(chalk.yellow(`Selector failed: ${selector}`));
+            }
         }
+
+        if (!content) {
+            console.error(chalk.red(`No selectors worked for ${productToScrapeFull.products_to_scrape.name}`));
+        }
+
+        return content?.trim() || 'No content found';
+    } catch (error) {
+        console.error(chalk.red(`Error scraping ${url}:`), error);
+        return 'Error occurred';
     }
-    await browser.close();
-
-    return content || 'No content found';
 }
-
-
 
