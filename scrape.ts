@@ -1,5 +1,5 @@
 
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from './src/db.ts';
 import { products, productsToScrape, providerSelectors } from './src/schema.ts';
 
@@ -77,6 +77,25 @@ export async function main() {
 }
 
 
+export async function testLastAdded() {
+
+
+    const result = await db.select()
+        .from(productsToScrape)
+        .orderBy(sql`${productsToScrape.dateAdded} COLLATE NOCASE desc`)
+        .limit(1)
+        .leftJoin(providerSelectors, eq(productsToScrape.provider, providerSelectors.provider))
+        .where(eq(productsToScrape.active, true))
+
+
+    const scrapedProductPrice = await scrapeProduct(result[0]!);
+
+    console.log(chalk.magenta(`Scraped price for ${result[0]!.products_to_scrape.name}: ${scrapedProductPrice}`));
+
+
+}
+
+
 
 async function getProductsFromDb() {
 
@@ -122,7 +141,9 @@ async function scrapeProduct(productToScrapeFull: ProductToScrapeFull): Promise<
 
 
     await page.goto(url, {
-        waitUntil: 'networkidle', // waits until no network requests for 500 ms
+        // waitUntil: 'networkidle', // waits until no network requests for 500 ms
+        waitUntil: 'domcontentloaded', // waits until no network requests for 500 ms
+
         timeout: 60000,           // 1 minute
     });
 
