@@ -84,12 +84,50 @@
         color: #888;
         word-break: break-all;
       }
+      .run-section {
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background: #f0f7ff;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      .btn {
+        padding: 0.6rem 1.2rem;
+        border: none;
+        border-radius: 4px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      .btn-primary {
+        background: #007bff;
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #0056b3;
+      }
+      .btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      #run-status {
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
     </style>
   </head>
   <body>
     <a href="/">home</a>
     <a href="/data">data</a>
     <h1>Manage Scrapers</h1>
+
+    <div class="run-section">
+      <button id="run-btn" class="btn btn-primary" onclick="runScraper()">Run Scraper Now</button>
+      <span id="run-status"></span>
+    </div>
+
     <div id="status">Loading scrapers...</div>
     <table id="scrapers-table">
       <thead>
@@ -178,7 +216,61 @@
         }
       }
 
+      async function runScraper() {
+        const btn = document.getElementById("run-btn");
+        const statusText = document.getElementById("run-status");
+        
+        btn.disabled = true;
+        statusText.textContent = "Starting scraper...";
+        statusText.style.color = "#007bff";
+
+        try {
+          const res = await fetch("/api/run-scraper", { method: "POST" });
+          const data = await res.json();
+          
+          if (res.ok) {
+            statusText.textContent = "Scraper is running...";
+            checkStatus();
+          } else {
+            statusText.textContent = "Error: " + (data.error || "Failed to start");
+            statusText.style.color = "#dc3545";
+            btn.disabled = false;
+          }
+        } catch (err) {
+          statusText.textContent = "Network error";
+          statusText.style.color = "#dc3545";
+          btn.disabled = false;
+        }
+      }
+
+      async function checkStatus() {
+        const btn = document.getElementById("run-btn");
+        const statusText = document.getElementById("run-status");
+
+        try {
+          const res = await fetch("/api/scraper-status");
+          const data = await res.json();
+          
+          if (data.isRunning) {
+            btn.disabled = true;
+            statusText.textContent = "Scraper is running...";
+            statusText.style.color = "#007bff";
+            setTimeout(checkStatus, 2000);
+          } else {
+            if (btn.disabled) {
+               statusText.textContent = "Scraper execution finished!";
+               statusText.style.color = "#28a745";
+               btn.disabled = false;
+               loadScrapers(); // Refresh table since data might have changed
+            }
+          }
+        } catch (err) {
+          console.error("Status check failed", err);
+        }
+      }
+
       loadScrapers();
+      checkStatus(); // Check if already running on load
     </script>
   </body>
 </html>

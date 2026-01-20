@@ -3,6 +3,7 @@ import { readFileSync } from "fs";
 import { addProduct, addProvider, type Product, type Provider } from "../utils";
 import { getDataRoute } from "./routes/data";
 import { getScrapersRoute, toggleScraperRoute } from "./routes/scrapers";
+import { runScraperRoute, getScraperStatusRoute } from "./routes/run-scraper";
 
 const HTML: string = readFileSync(new URL("./index.html", import.meta.url), "utf8");
 const HTML_PROVIDER: string = readFileSync(new URL("./provider.html", import.meta.url), "utf8");
@@ -47,6 +48,14 @@ serve({
 
         if (url.pathname === "/api/toggle-scraper" && req.method === "POST") {
             return toggleScraperRoute(req);
+        }
+
+        if (url.pathname === "/api/run-scraper" && req.method === "POST") {
+            return runScraperRoute();
+        }
+
+        if (url.pathname === "/api/scraper-status" && req.method === "GET") {
+            return getScraperStatusRoute();
         }
 
 

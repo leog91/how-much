@@ -163,4 +163,7 @@ async function scrapeProduct(productToScrapeFull: ProductToScrapeFull, page: Pag
     }
 }
 
-await main();
+// Only run if this file is executed directly (not imported)
+if (import.meta.main) {
+    await main();
+}
