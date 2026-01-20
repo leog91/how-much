@@ -41,6 +41,27 @@ export const addProduct = async (product: Product) => {
     }
 }
 
+export const getScrapers = async () => {
+    try {
+        const result = await db.select().from(productsToScrape);
+        return result;
+    } catch (error) {
+        console.error("Error fetching scrapers:", error);
+        return [];
+    }
+}
+
+export const toggleProductActive = async (id: string, active: boolean) => {
+    try {
+        await db.update(productsToScrape)
+            .set({ active })
+            .where(eq(productsToScrape.id, id));
+        console.log(`Product ${id} active status updated to ${active}`);
+    } catch (error) {
+        console.error("Error updating product active status:", error);
+    }
+}
+
 
 export async function getSelectorsForProvider(provider: string) {
     const result = await db

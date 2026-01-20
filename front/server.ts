@@ -2,10 +2,12 @@ import { serve } from "bun";
 import { readFileSync } from "fs";
 import { addProduct, addProvider, type Product, type Provider } from "../utils";
 import { getDataRoute } from "./routes/data";
+import { getScrapersRoute, toggleScraperRoute } from "./routes/scrapers";
 
 const HTML: string = readFileSync(new URL("./index.html", import.meta.url), "utf8");
 const HTML_PROVIDER: string = readFileSync(new URL("./provider.html", import.meta.url), "utf8");
 const HTML_DATA: string = readFileSync(new URL("./data.html", import.meta.url), "utf8");
+const HTML_MANAGE: string = readFileSync(new URL("./manage.html", import.meta.url), "utf8");
 
 
 
@@ -30,10 +32,21 @@ serve({
         if (url.pathname === "/data" && req.method === "GET")
             return new Response(HTML_DATA, { headers: { "content-type": "text/html; charset=utf-8" } });
 
+        if (url.pathname === "/manage" && req.method === "GET")
+            return new Response(HTML_MANAGE, { headers: { "content-type": "text/html; charset=utf-8" } });
+
 
 
         if (url.pathname === "/api/data" && req.method === "GET") {
             return getDataRoute();
+        }
+
+        if (url.pathname === "/api/scrapers" && req.method === "GET") {
+            return getScrapersRoute();
+        }
+
+        if (url.pathname === "/api/toggle-scraper" && req.method === "POST") {
+            return toggleScraperRoute(req);
         }
 
 
