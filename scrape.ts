@@ -163,3 +163,4 @@ async function scrapeProduct(productToScrapeFull: ProductToScrapeFull, page: Pag
     }
 }
 
+await main();
