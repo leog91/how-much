@@ -10,7 +10,10 @@ To install dependencies:
 
 ```bash
 bun install
+bunx playwright install chromium
 ```
+
+Playwright needs its browser binaries installed separately from npm packages. Run the command above after a fresh clone or after Playwright is updated.
 
 To run:
 
