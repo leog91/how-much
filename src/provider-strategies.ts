@@ -75,23 +75,20 @@ export function parseTicketOnePrice(name: string, bodyText: string): string | nu
             ? 'weekend'
             : 'any';
 
-    const candidates: string[][] = [];
+    const rows = splitTicketOneRows(lines);
+    const candidates = rows.filter((row) => {
+        const text = row.join(' ').toLowerCase();
 
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i]?.toLowerCase() || '';
-
-        if (target === 'sunday' && (line.includes('sun') || line.includes('sunday'))) {
-            candidates.push(lines.slice(i, i + 12));
+        if (target === 'sunday') {
+            return /\bsun\b|sunday/.test(text) || text.includes('06 sept 2026');
         }
 
-        if (target === 'weekend' && (line.includes('06/09/2026') || line.includes('abbo') || line.includes('3 giorni') || line.includes('3 events'))) {
-            candidates.push(lines.slice(i, i + 14));
+        if (target === 'weekend') {
+            return text.includes('abbo') || text.includes('3 giorni') || text.includes('3 events') || text.includes('04/09/2026 to 06/09/2026');
         }
 
-        if (target === 'any' && line.includes('from')) {
-            candidates.push(lines.slice(i, i + 4));
-        }
-    }
+        return /from\s*€/.test(text);
+    });
 
     for (const candidate of candidates) {
         const text = candidate.join(' ');
@@ -102,6 +99,27 @@ export function parseTicketOnePrice(name: string, bodyText: string): string | nu
     }
 
     return null;
+}
+
+function splitTicketOneRows(lines: string[]) {
+    const rows: string[][] = [];
+    let current: string[] = [];
+
+    for (const line of lines) {
+        if (isTicketOneRowStart(line) && current.length) {
+            rows.push(current);
+            current = [];
+        }
+
+        current.push(line);
+    }
+
+    if (current.length) rows.push(current);
+    return rows;
+}
+
+function isTicketOneRowStart(line: string) {
+    return /^(0[4-6]|04\/09\/2026|05\/09\/2026|06\/09\/2026)$/.test(line.trim());
 }
 
 async function scrapeAmazonPrice(url: string): Promise<string | null> {
