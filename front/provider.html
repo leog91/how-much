@@ -15,6 +15,14 @@
         gap: 0.5rem;
         max-width: 360px;
       }
+      .help {
+        max-width: 720px;
+        margin: 1rem 0;
+        padding: 0.75rem 1rem;
+        background: #f6f8fa;
+        border-left: 4px solid #0969da;
+        color: #444;
+      }
       label {
         font-weight: 600;
       }
@@ -30,6 +38,11 @@
     <a href="/">home</a>
     <h1>Add Provider</h1>
 
+    <div class="help">
+      Add a provider when there is no built-in scraper strategy. The provider name must match the product provider exactly.
+      Price selectors are XPath expressions. Built-in providers do not need selector records; the current available provider list is shown on the Add Product page.
+    </div>
+
     <form id="providerForm">
       <label for="provider_name">Name</label>
       <input id="provider_name" name="provider_name" type="text" required />
@@ -37,8 +50,14 @@
       <label for="priceSelector">PriceSelector</label>
       <input id="priceSelector" name="priceSelector" type="text" required />
 
+      <label for="priceSelectorNotInSale">PriceSelectorNotInSale</label>
+      <input id="priceSelectorNotInSale" name="priceSelectorNotInSale" type="text" />
+
       <label for="titleSelector">TitleSelector</label>
       <input id="titleSelector" name="titleSelector" type="text" />
+
+      <label for="availabilitySelector">AvailabilitySelector</label>
+      <input id="availabilitySelector" name="availabilitySelector" type="text" />
 
       <label for="imageSelector">ImageSelector</label>
       <input id="imageSelector" name="imageSelector" type="text" />

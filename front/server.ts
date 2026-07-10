@@ -1,6 +1,6 @@
 import { serve } from "bun";
 import { readFileSync } from "fs";
-import { addProduct, addProvider, type Product, type Provider } from "../utils";
+import { addProduct, addProvider, getAvailableProviders, type Product, type Provider } from "../utils";
 import { getDataRoute } from "./routes/data";
 import { getScrapersRoute, toggleScraperRoute } from "./routes/scrapers";
 import { runScraperRoute, getScraperStatusRoute } from "./routes/run-scraper";
@@ -58,6 +58,15 @@ serve({
             return getScraperStatusRoute();
         }
 
+        if (url.pathname === "/api/providers" && req.method === "GET") {
+            return (async (): Promise<Response> => {
+                const providers = await getAvailableProviders();
+                return new Response(JSON.stringify(providers), {
+                    headers: { "content-type": "application/json" },
+                });
+            })();
+        }
+
 
 
         // Handle /submit
@@ -74,10 +83,17 @@ serve({
                         notes: typeof data.notes === "string" ? data.notes : "",
                     };
 
-                    console.log("Adding product to scrape:", product);
-                    addProduct(product);
+                    if (!product.url || !product.provider || !product.name) {
+                        return new Response(JSON.stringify({ error: "Missing required product fields" }), {
+                            status: 400,
+                            headers: { "content-type": "application/json" },
+                        });
+                    }
 
-                    return new Response(JSON.stringify({ success: true }), {
+                    console.log("Adding product to scrape:", product);
+                    await addProduct(product);
+
+                    return new Response(JSON.stringify({ success: true, message: "Product added" }), {
                         status: 200,
                         headers: { "content-type": "application/json" },
                     });
@@ -103,6 +119,10 @@ serve({
                             typeof data.provider_name === "string" ? data.provider_name : "",
                         priceSelector:
                             typeof data.priceSelector === "string" ? data.priceSelector : "",
+                        priceSelectorNotInSale:
+                            typeof data.priceSelectorNotInSale === "string"
+                                ? data.priceSelectorNotInSale
+                                : "",
                         titleSelector:
                             typeof data.titleSelector === "string" ? data.titleSelector : "",
                         availabilitySelector:
@@ -116,8 +136,15 @@ serve({
                         notes: typeof data.notes === "string" ? data.notes : "",
                     };
 
-                    addProvider(provider);
-                    return new Response(JSON.stringify({ success: true }), {
+                    if (!provider.provider || !provider.priceSelector) {
+                        return new Response(JSON.stringify({ error: "Missing required provider fields" }), {
+                            status: 400,
+                            headers: { "content-type": "application/json" },
+                        });
+                    }
+
+                    await addProvider(provider);
+                    return new Response(JSON.stringify({ success: true, message: "Provider added" }), {
                         status: 200,
                         headers: { "content-type": "application/json" },
                     });

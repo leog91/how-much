@@ -15,6 +15,14 @@
         gap: 0.5rem;
         max-width: 360px;
       }
+      .help {
+        max-width: 720px;
+        margin: 1rem 0;
+        padding: 0.75rem 1rem;
+        background: #f6f8fa;
+        border-left: 4px solid #0969da;
+        color: #444;
+      }
       label {
         font-weight: 600;
       }
@@ -32,6 +40,13 @@
     <a href="/manage">manage scrapers</a>
     <h1>Product to Scrape</h1>
 
+    <div class="help">
+      <strong>Provider names matter.</strong>
+      Available providers: <span id="provider-list">loading...</span>.
+      For a new provider, add provider selectors first on the provider page, then use exactly the same provider name here.
+      Items without a built-in strategy or configured selector will be marked failed when scraping.
+    </div>
+
     <form id="myForm">
       <label for="name">Name</label>
       <input id="name" name="name" type="text" required />
@@ -40,7 +55,8 @@
       <input id="url" name="url" type="url" required />
 
       <label for="provider">Provider</label>
-      <input id="provider" name="provider" type="text" required />
+      <input id="provider" name="provider" type="text" list="providers" required />
+      <datalist id="providers"></datalist>
 
       <label for="notes">Notes</label>
       <input id="notes" name="notes" type="text" />
@@ -53,6 +69,30 @@
     <script>
       const form = document.getElementById("myForm");
       const status = document.getElementById("status");
+      const providerList = document.getElementById("provider-list");
+      const providers = document.getElementById("providers");
+
+      async function loadProviders() {
+        try {
+          const res = await fetch("/api/providers");
+          const data = await res.json();
+          providers.innerHTML = "";
+          for (const provider of data) {
+            const option = document.createElement("option");
+            option.value = provider;
+            providers.appendChild(option);
+          }
+          providerList.innerHTML = data.map((provider) => `<code>${escapeHtml(provider)}</code>`).join(", ");
+        } catch (err) {
+          providerList.textContent = "could not load providers";
+        }
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text || "";
+        return div.innerHTML;
+      }
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -75,6 +115,8 @@
           status.textContent = "Error: " + err.message;
         }
       });
+
+      loadProviders();
     </script>
   </body>
 </html>

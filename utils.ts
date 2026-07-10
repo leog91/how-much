@@ -1,6 +1,7 @@
 import { db } from './src/db.ts';
 import { productsToScrape, providerSelectors } from "./src/schema";
 import { eq } from "drizzle-orm";
+import { builtInProviders } from './src/provider-strategies.ts';
 
 //service.ts maybe 
 
@@ -71,9 +72,23 @@ export async function getSelectorsForProvider(provider: string) {
     return result[0];
 }
 
+export const getAvailableProviders = async () => {
+    try {
+        const configuredProviders = await db.select({ provider: providerSelectors.provider }).from(providerSelectors);
+        return [...new Set([
+            ...builtInProviders,
+            ...configuredProviders.map((row) => row.provider),
+        ])].sort();
+    } catch (error) {
+        console.error("Error fetching providers:", error);
+        return [...builtInProviders].sort();
+    }
+}
+
 export type Provider = {
     // id: crypto.randomUUID(),
     priceSelector: string,
+    priceSelectorNotInSale?: string,
     titleSelector: string,
     availabilitySelector: string,
     imageSelector: string,
@@ -89,6 +104,7 @@ export const addProvider = async (provider: Provider) => {
         await db.insert(providerSelectors).values({
             id: crypto.randomUUID(),
             priceSelector: provider.priceSelector,
+            priceSelectorNotInSale: provider.priceSelectorNotInSale || '',
             titleSelector: provider.titleSelector,
             availabilitySelector: provider.availabilitySelector,
             imageSelector: provider.imageSelector,
@@ -110,5 +126,3 @@ export const addProvider = async (provider: Provider) => {
 
 
 // const product = { url: "https://www.amazon.com/dp/B0D123EXAMPLE", provider: "amazon", name: "Apple AirPods Pro (2nd Gen)" };
-
-
