@@ -1,6 +1,8 @@
 import { main } from "../../scrape";
 
 let isRunning = false;
+let lastResult: Awaited<ReturnType<typeof main>> | null = null;
+let lastError: string | null = null;
 
 export async function runScraperRoute(): Promise<Response> {
     if (isRunning) {
@@ -12,13 +14,21 @@ export async function runScraperRoute(): Promise<Response> {
 
     // Run scraper asynchronously
     isRunning = true;
+    lastError = null;
     main()
-        .then(() => {
-            console.log("Scraper completed successfully");
+        .then((result) => {
+            lastResult = result;
+            const failedCount = result.filter((item) => item.status === 'failed').length;
+            if (failedCount > 0) {
+                console.warn(`Scraper completed with ${failedCount} failed item(s)`);
+            } else {
+                console.log("Scraper completed successfully");
+            }
             isRunning = false;
         })
         .catch((err) => {
             console.error("Scraper failed:", err);
+            lastError = err instanceof Error ? err.message : String(err);
             isRunning = false;
         });
 
@@ -30,7 +40,7 @@ export async function runScraperRoute(): Promise<Response> {
 
 export async function getScraperStatusRoute(): Promise<Response> {
     return new Response(
-        JSON.stringify({ isRunning }),
+        JSON.stringify({ isRunning, lastResult, lastError }),
         { headers: { "content-type": "application/json" } }
     );
 }

@@ -116,6 +116,10 @@
         font-size: 0.9rem;
         font-weight: 500;
       }
+      #run-result {
+        margin-bottom: 1rem;
+        color: #666;
+      }
     </style>
   </head>
   <body>
@@ -127,6 +131,7 @@
       <button id="run-btn" class="btn btn-primary" onclick="runScraper()">Run Scraper Now</button>
       <span id="run-status"></span>
     </div>
+    <div id="run-result"></div>
 
     <div id="status">Loading scrapers...</div>
     <table id="scrapers-table">
@@ -246,6 +251,7 @@
       async function checkStatus() {
         const btn = document.getElementById("run-btn");
         const statusText = document.getElementById("run-status");
+        const resultText = document.getElementById("run-result");
 
         try {
           const res = await fetch("/api/scraper-status");
@@ -258,10 +264,22 @@
             setTimeout(checkStatus, 2000);
           } else {
             if (btn.disabled) {
-               statusText.textContent = "Scraper execution finished!";
-               statusText.style.color = "#28a745";
-               btn.disabled = false;
-               loadScrapers(); // Refresh table since data might have changed
+              const failures = (data.lastResult || []).filter((item) => item.status === "failed");
+              if (data.lastError) {
+                statusText.textContent = "Scraper failed.";
+                statusText.style.color = "#dc3545";
+                resultText.textContent = data.lastError;
+              } else if (failures.length) {
+                statusText.textContent = "Scraper finished with failed items.";
+                statusText.style.color = "#dc3545";
+                resultText.textContent = "Failed: " + failures.map((item) => item.name).join(", ");
+              } else {
+                statusText.textContent = "Scraper execution finished!";
+                statusText.style.color = "#28a745";
+                resultText.textContent = "";
+              }
+              btn.disabled = false;
+              loadScrapers(); // Refresh table since data might have changed
             }
           }
         } catch (err) {
