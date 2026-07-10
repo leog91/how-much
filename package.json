@@ -6,7 +6,8 @@
   "scripts": {
     "start": "bun run scrape.ts",
     "db-push": "bunx drizzle-kit generate && bunx drizzle-kit migrate",
-    "front": "bun run --watch front/server.ts"
+    "front": "bun run --watch front/server.ts",
+    "chrome-debug": "google-chrome --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir=/tmp/how-much-chrome --no-first-run --no-default-browser-check"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",
